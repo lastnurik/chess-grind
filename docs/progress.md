@@ -16,3 +16,6 @@ Each ticket receives its own commit after validation. Parent owns Git commits/pu
 - chess.js 1.4.0 BSD and Stockfish 19 lite single-threaded GPLv3, vendored.
 - Reference font and Staunty piece sprite obtained from rendered ChessReps UI.
 - Private GitHub repo created; origin uses SSH. Push verification pending.
+
+## Ticket #1 — Core trainer
+Implemented 29 courses (24 openings, 5 strategy), 2,039 course lines and the catalog/trainer UI. All generated course lines replay legally. 18 behavior tests pass, syntax checks pass. Browser checks verified selecting Italian, depth dialog, rejecting d4 without moving, hint source, e4/e5 and Nf3 reply sequence. Reference-like styles integrated. Independent review pending.
