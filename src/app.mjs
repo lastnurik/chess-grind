@@ -83,9 +83,13 @@ function currentView() {
   s.line.moves.slice(0,reviewPly).forEach(m=>game.move(m));
   return {...s,fen:game.fen(),ply:reviewPly,history:game.history({verbose:true})};
 }
+function notesVisible(s) {
+  const currentError=Boolean(s.feedback&&s.feedback!=='Correct!');
+  return settings.notes!=='On tap'||s.hintLevel>0||currentError;
+}
 function coachNote(s) {
-  if(s.status==='complete') return `<strong>Line complete. Nicely done!</strong><p>You’ve reached the end of ${esc(s.line.title)}.</p><button class="primary purple" data-action="completion">See your results ${icon('right')}</button>`;
   if(reviewPly!==null) return `<strong>Reviewing move ${Math.ceil(reviewPly/2)}</strong><p>Use the arrows to explore what you played.</p><button class="secondary" data-action="returnlive">Return to training</button>`;
+  if(s.status==='complete') return `<strong>Line complete. Nicely done!</strong><p>You’ve reached the end of ${esc(s.line.title)}.</p><button class="primary purple" data-action="completion">See your results ${icon('right')}</button>`;
   if(s.turn!==s.side) return '<p>Okay, your opponent’s turn.</p>';
   const expected=s.expected;
   if(!expected) return '';
@@ -97,7 +101,7 @@ function coachNote(s) {
     else if(expected.piece==='n'||expected.piece==='b') note='Improve a minor piece and increase your control of the center. Keep the next pawn break in mind as you develop.';
     else note=course.plans?.[Math.floor(s.ply/2)%course.plans.length]||'Coordinate your pieces and follow the plan for this position.';
   }
-  const showNotes=settings.notes!=='On tap'||s.mistakes>0||s.hintLevel>0;
+  const showNotes=notesVisible(s);
   return `${showNotes?esc(note).split('\n\n').map(p=>`<p>${p.replace(/\n/g,'<br>')}</p>`).join(''):''}<strong>${esc(describeMove(expected))}</strong><div class="coach-links"><button data-action="plans">Plans & ideas</button><span>·</span><button data-action="lineinfo">${esc(s.line.title)}</button></div>`;
 }
 function modeCards(s) {
@@ -108,7 +112,8 @@ function renderTrainer() {
   if(!session) return;
   const s=currentView(), actual=session.snapshot();
   document.title=`${course.title} · Chess Grind`;
-  const hint=actual.expected&&(actual.hintLevel>0||settings.arrows!=='Off')?{from:actual.expected.from,...(actual.hintLevel>1||settings.arrows!=='Off'?{to:actual.expected.to}:{})}:null;
+  const automaticArrow=settings.arrows==='Always'||(settings.arrows==='With notes'&&notesVisible(actual));
+  const hint=actual.expected&&(actual.hintLevel>0||automaticArrow)?{from:actual.expected.from,...(actual.hintLevel>1||automaticArrow?{to:actual.expected.to}:{})}:null;
   app.innerHTML=`${header()}<div class="session-progress" aria-label="Line progress" role="progressbar" aria-valuemin="0" aria-valuemax="${s.line.moves.length}" aria-valuenow="${actual.ply}"><span class="session-progress-fill" style="width:${actual.ply/s.line.moves.length*100}%"></span></div><main class="trainer"><section class="board-column"><div class="board-wrap">${settings.evaluation?'<div class="evaluation" aria-label="Engine evaluation unavailable until enabled"><div class="eval-white" style="height:50%"></div><span class="eval-score">—</span></div>':''}<div class="board-mount" id="board-mount">${boardHtml(s.fen,{flipped,selected,lastMove:s.history.at(-1),hint:reviewPly===null?hint:null,interactive:true})}</div></div><div class="board-caption"><span>${reviewPly===null?`${s.side==='w'?'White':'Black'} repertoire · ${esc(s.line.title)}`:'Reviewing position'}</span><button data-action="flip" title="Flip board (F)" aria-label="Flip board">${icon('flip')}</button></div></section><aside class="trainer-panel"><div class="trainer-heading"><button class="mode-selector" data-action="modes">${modeIcon(actual.mode||'Learn')} <span>${esc(actual.mode||'Learn')}</span></button><button class="course-selector" data-action="courses">${esc(course.title)}</button><button class="line-selector" data-action="lines">#${actual.lineIndex+1} ${icon('down')}</button></div><div class="coach"><div class="coach-avatar"><img src="./assets/icon.svg" alt="Coach"></div><div class="coach-bubble" aria-live="polite">${coachNote(s)}</div></div>${actual.feedback?`<div class="feedback ${actual.feedback==='Correct!'?'success':'error'}" role="status">${esc(actual.feedback)}</div>`:''}${actual.ply===0?modeCards(actual):''}<div class="panel-spacer"></div><div class="trainer-controls"><button class="control-button icon-button" data-action="settings" aria-label="Settings" title="Settings">${icon('settings')}</button><button class="control-button" data-action="modes">${icon('game')}<span>Mode</span></button><button class="control-button" data-action="hint" aria-label="${actual.hintLevel>1?'Solve':actual.hintLevel===1?'Show move':'Show hint'}" ${actual.status==='complete'||reviewPly!==null?'disabled':''}>${icon('bulb')}<span>${actual.hintLevel>1?'Solve':actual.hintLevel===1?'Show move':'Hint'}</span></button><div class="nav-controls"><button class="control-button icon-button" data-action="previous" aria-label="Previous move" ${s.ply===0?'disabled':''}>${icon('left')}</button><button class="control-button icon-button" data-action="next" aria-label="Next move" ${reviewPly===null?'disabled':''}>${icon('right')}</button></div></div></aside></main>`;
   bindBoard(document.querySelector('#board-mount'),{getGame:()=>new Chess(currentView().fen),onSelect:selectSquare,onMove:makeMove});
 }

@@ -32,7 +32,7 @@ export const strategyDefinitions = [
         6: 'Remove the defender on d7. The sacrifice is concrete: the other rook can occupy d1 after the exchange.',
         8: 'Bring the last rook into play. The attack now uses the open file with all available force instead of relying on the queen alone.',
         10: 'Remove another defender with check. Before sacrificing material, account for every legal response.',
-        12: 'The queen sacrifice deflects the b8 knight from d7. The rook can then invade d8 with mate.',
+        12: 'The queen sacrifice deflects the knight from d7 to b8, clearing the d-file so the rook can invade d8 with mate.',
         14: 'The coordinated attack finishes on the open file. The lesson is the sequence of useful forcing moves that made the final pattern possible.'
       }
     }]

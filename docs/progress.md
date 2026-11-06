@@ -19,3 +19,6 @@ Each ticket receives its own commit after validation. Parent owns Git commits/pu
 
 ## Ticket #1 — Core trainer
 Implemented 29 courses (24 openings, 5 strategy), 2,039 course lines and the catalog/trainer UI. All generated course lines replay legally. 18 behavior tests pass, syntax checks pass. Browser checks verified selecting Italian, depth dialog, rejecting d4 without moving, hint source, e4/e5 and Nf3 reply sequence. Reference-like styles integrated. Independent review pending.
+
+## Core independent review and fixes
+Standards: 2 findings (conditional arrows; per-position On tap visibility). Spec: 3 findings (same help behavior; two factual annotations; completed-line review coach). Fixed conditional notes/arrows, prioritized review coaching, corrected Bb5 pressure and Opera deflection. Browser regression: On tap + With notes shows no arrow; after one mistake and a correct move/opponent reply the next position hides notes/arrows again. Full line completion already verified. SSH push now works through existing desktop GCR agent.
