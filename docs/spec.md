@@ -19,7 +19,7 @@ Chess Grind recreates the observed catalog and board-centered trainer, with free
 5. As a learner, I want the app called Chess Grind throughout.
 6. As a learner, I want to choose Essentials, Advanced or Full Mastery, so I can control training depth.
 7. As a learner, I want to select specific branching lines, so I can train responses to different moves.
-8. As a learner, I want legal click and drag board input, so I can play naturally.
+8. As a learner, I want legal click and drag board input, so I can play naturally. Mouse, pen and touch dragging move the actual piece under the pointer without a browser drag image; cancelled or off-board drops restore the piece, and click/keyboard input remains available.
 9. As a learner, I want the opponent to reply automatically, so I can focus on my side.
 10. As a learner, I want original coach notes explaining plans and pawn structures, so I understand moves.
 11. As a learner, I want wrong moves rejected with helpful feedback, so mistakes do not corrupt the line.

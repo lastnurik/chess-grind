@@ -15,7 +15,7 @@ export function boardHtml(fen, { flipped = false, selected = '', lastMove = null
     const light = (square.charCodeAt(0)-97+Number(square[1]))%2===0;
     const marked = lastMove && (lastMove.from===square || lastMove.to===square);
     const label = `${square}${piece ? ` ${piece.color==='w'?'white':'black'} ${pieceNames[piece.type]}` : ''}`;
-    squares.push(`<${interactive?'button':'div'} class="square ${light?'light':'dark'} ${marked?'last-move':''} ${selected===square?'selected':''} ${hint?.from===square?'hint-source':''}" ${interactive?`type="button" data-square="${square}" aria-label="${label}" ${piece?'draggable="true"':''}`:''}>${!miniature&&col===0?`<span class="rank">${ranks[row]}</span>`:''}${!miniature&&row===7?`<span class="file">${files[col]}</span>`:''}${piece?`<svg class="piece" viewBox="0 0 40 40" aria-hidden="true"><use href="./assets/pieces.svg#${piece.color}${piece.type}"/></svg>`:''}${destinations.includes(square)?`<span class="legal-dot ${piece?'capture':''}"></span>`:''}</${interactive?'button':'div'}>`);
+    squares.push(`<${interactive?'button':'div'} class="square ${light?'light':'dark'} ${marked?'last-move':''} ${selected===square?'selected':''} ${hint?.from===square?'hint-source':''}" ${interactive?`type="button" data-square="${square}" aria-label="${label}" draggable="false"`:''}>${!miniature&&col===0?`<span class="rank">${ranks[row]}</span>`:''}${!miniature&&row===7?`<span class="file">${files[col]}</span>`:''}${piece?`<svg class="piece" viewBox="0 0 40 40" aria-hidden="true"><use href="./assets/pieces.svg#${piece.color}${piece.type}"/></svg>`:''}${destinations.includes(square)?`<span class="legal-dot ${piece?'capture':''}"></span>`:''}</${interactive?'button':'div'}>`);
   }
   let arrow = '';
   if (hint?.to) {
@@ -27,24 +27,63 @@ export function boardHtml(fen, { flipped = false, selected = '', lastMove = null
 }
 
 export function bindBoard(container, { getGame, onSelect, onMove }) {
-  let dragged = null;
-  container.addEventListener('click', e=>{
-    const square = e.target.closest('[data-square]')?.dataset.square;
-    if(square) onSelect(square);
+  let drag = null, suppressClick = false;
+  const squareAt = target => {
+    const square = target?.closest('[data-square]');
+    return square && container.contains(square) ? square : null;
+  };
+  function resetDrag() {
+    const previous = drag;
+    drag = null;
+    if (!previous) return;
+    previous.piece.style.transform = '';
+    previous.source.classList.remove('dragging');
+    if (container.hasPointerCapture(previous.id)) container.releasePointerCapture(previous.id);
+    suppressClick = previous.moved;
+  }
+  container.addEventListener('click', e => {
+    if (suppressClick && e.detail !== 0) {
+      suppressClick = false;
+      e.preventDefault();
+      return;
+    }
+    const square = squareAt(e.target)?.dataset.square;
+    if (square) onSelect(square);
   });
-  container.addEventListener('dragstart', e=>{
-    const square = e.target.closest('[data-square]')?.dataset.square;
-    if(!square || !getGame().get(square)) return e.preventDefault();
-    dragged = square;
-    e.dataTransfer.setData('text/plain',square);
-    e.dataTransfer.effectAllowed='move';
+  // Native dragging creates a browser image preview instead of moving the piece.
+  container.addEventListener('dragstart', e => e.preventDefault());
+  container.addEventListener('pointerdown', e => {
+    if (drag || !e.isPrimary || e.button !== 0) return;
+    suppressClick = false;
+    const source = squareAt(e.target), game = getGame();
+    if (!source || game.get(source.dataset.square)?.color !== game.turn()) return;
+    const piece = source.querySelector('.piece');
+    if (!piece) return;
+    drag = { id: e.pointerId, source, piece, from: source.dataset.square,
+      x: e.clientX, y: e.clientY, fen: game.fen(), moved: false };
+    container.setPointerCapture(e.pointerId);
   });
-  container.addEventListener('dragover', e=>{if(e.target.closest('[data-square]')) e.preventDefault();});
-  container.addEventListener('drop', e=>{
+  container.addEventListener('pointermove', e => {
+    if (!drag || drag.id !== e.pointerId) return;
+    if (getGame().fen() !== drag.fen) return resetDrag();
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
     e.preventDefault();
-    const to=e.target.closest('[data-square]')?.dataset.square;
-    if(dragged&&to&&dragged!==to) onMove(dragged,to);
-    dragged=null;
+    drag.source.classList.add('dragging');
+    drag.piece.style.transform = `translate(${dx}px, ${dy}px)`;
   });
-  container.addEventListener('dragend',()=>{dragged=null;});
+  container.addEventListener('pointerup', e => {
+    if (!drag || drag.id !== e.pointerId) return;
+    const { from, fen, moved } = drag;
+    const to = squareAt(container.ownerDocument.elementFromPoint(e.clientX, e.clientY))?.dataset.square;
+    resetDrag();
+    suppressClick = true;
+    if (getGame().fen() !== fen) return;
+    if (!moved) onSelect(from);
+    else if (to && to !== from) onMove(from, to);
+  });
+  for (const type of ['pointercancel', 'lostpointercapture']) {
+    container.addEventListener(type, e => { if (drag?.id === e.pointerId) resetDrag(); });
+  }
 }
